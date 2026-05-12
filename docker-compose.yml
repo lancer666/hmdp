@@ -1,0 +1,51 @@
+# MySQL + Redis for 黑马点评 (hmdp)
+# 与 src/main/resources/application.yaml 默认配置对齐：
+#   MySQL: 127.0.0.1:3306 / 库 hmdp / root / 123456
+#   Redis: 127.0.0.1:6379 / 密码 123456
+#
+# 在宿主机运行 Spring Boot 时，请将 application.yaml 里 redis.host 改为 127.0.0.1
+#（原课程虚拟机地址 192.168.150.101 需替换）。
+#
+# 启动: docker compose up -d
+# 停止: docker compose down
+# 首次需导入数据: mysql -h127.0.0.1 -P3306 -uroot -p123456 hmdp < hmdp.sql
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hmdp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: hmdp
+      TZ: Asia/Shanghai
+    ports:
+      - target: 3306
+        published: 3306
+        protocol: tcp
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - "hmdp-mysql-data:/var/lib/mysql"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: hmdp-redis
+    restart: unless-stopped
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+    command: redis-server --appendonly yes --requirepass "123456"
+    volumes:
+      - "hmdp-redis-data:/data"
+volumes:
+  hmdp-mysql-data:
+  hmdp-redis-data:
