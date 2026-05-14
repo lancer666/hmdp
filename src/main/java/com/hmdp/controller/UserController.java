@@ -55,9 +55,12 @@ public class UserController {
      * @return 无
      */
     @PostMapping("/logout")
-    public Result logout(){
-        // TODO 实现登出功能
-        return Result.fail("功能未完成");
+    public Result logout(HttpSession session){
+        // 清除session中的用户信息
+        session.removeAttribute("user");
+        // 或者直接让整个session失效
+        // session.invalidate();
+        return Result.ok();
     }
 
     @GetMapping("/me")
