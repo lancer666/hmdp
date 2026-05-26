@@ -6,11 +6,15 @@ import com.hmdp.dto.Result;
 import com.hmdp.entity.UserInfo;
 import com.hmdp.service.IUserInfoService;
 import com.hmdp.service.IUserService;
+import com.hmdp.utils.RedisConstants;
+import com.hmdp.utils.UserHolder;
+
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
 
 /**
  * <p>
@@ -24,7 +28,8 @@ import javax.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/user")
 public class UserController {
-
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private IUserService userService;
 
@@ -35,9 +40,9 @@ public class UserController {
      * 发送手机验证码
      */
     @PostMapping("code")
-    public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
+    public Result sendCode(@RequestParam("phone") String phone) {
         // TODO 发送短信验证码并保存验证码
-        return userService.sendCode(phone, session);
+        return userService.sendCode(phone);
     }
 
     /**
@@ -45,9 +50,9 @@ public class UserController {
      * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
      */
     @PostMapping("/login")
-    public Result login(@RequestBody LoginFormDTO loginForm, HttpSession session){
+    public Result login(@RequestBody LoginFormDTO loginForm){
         // TODO 实现登录功能
-        return userService.login(loginForm, session);
+        return userService.login(loginForm);
     }
 
     /**
@@ -55,22 +60,15 @@ public class UserController {
      * @return 无
      */
     @PostMapping("/logout")
-    public Result logout(HttpSession session){
+    public Result logout(@RequestHeader("authorization") String token){
         // 清除session中的用户信息
-        session.removeAttribute("user");
-        // 或者直接让整个session失效
-        // session.invalidate();
+        stringRedisTemplate.delete(RedisConstants.LOGIN_USER_KEY+token);
         return Result.ok();
     }
 
     @GetMapping("/me")
-    public Result me(HttpSession session){
-        // 获取当前登录的用户并返回
-        Object user = session.getAttribute("user");
-        if(user == null){
-            return Result.fail("用户未登录");
-        }
-        return Result.ok(user);
+    public Result me(){
+        return Result.ok(UserHolder.getUser());
     }
 
     @GetMapping("/info/{id}")
